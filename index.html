@@ -32,8 +32,8 @@
 <script type="importmap">
 {
   "imports": {
-    "react/": "https://esm.sh/react@^19.2.3/",
-    "react": "https://esm.sh/react@^19.2.3"
+    "react": "https://esm.sh/react@^19.2.3",
+    "react/": "https://esm.sh/react@^19.2.3/"
   }
 }
 </script>
@@ -85,7 +85,7 @@
             <!-- Navegación por Tabs -->
             <div class="flex bg-gray-900/90 p-1.5 m-3 rounded-[1.5rem] border border-gray-700/50">
                 <button id="tab-scanner" class="flex-1 py-3.5 font-black text-[10px] uppercase tracking-widest rounded-xl transition-all bg-indigo-600 text-white shadow-lg">Escanear Cámara</button>
-                <button id="tab-manual" class="flex-1 py-3.5 font-black text-[10px] uppercase tracking-widest rounded-xl transition-all text-gray-500 hover:text-white">Búsqueda Manual</button>
+                <button id="tab-manual" class="flex-1 py-3.5 font-black text-[10px] uppercase tracking-widest rounded-xl transition-all text-gray-500 hover:text-white">Lista de Cajas</button>
             </div>
 
             <div class="px-6 pb-6 flex-grow flex flex-col">
@@ -93,18 +93,18 @@
 
                 <!-- Sección Scanner -->
                 <div id="section-scanner" class="flex-grow flex flex-col items-center">
-                    <div id="reader-container" class="w-full aspect-square relative bg-black rounded-[2rem] overflow-hidden border-2 border-gray-700 shadow-2xl">
+                    <div id="reader-container" class="w-full aspect-video relative bg-black rounded-[2rem] overflow-hidden border-2 border-gray-700 shadow-2xl">
                         <div id="reader" class="w-full h-full"></div>
                         
                         <!-- Capa Flash -->
                         <div id="flash-layer" class="absolute inset-0 pointer-events-none z-40"></div>
 
                         <!-- Botón Disparador -->
-                        <div id="shutter-overlay" class="hidden absolute inset-0 flex flex-col items-center justify-end p-10 z-30">
-                            <button id="btn-capture" class="shutter-btn bg-white active:scale-90 text-indigo-600 w-24 h-24 rounded-full flex items-center justify-center transition-all shadow-[0_0_30px_rgba(255,255,255,0.2)]">
-                                <svg class="w-12 h-12" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 5a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V7a2 2 0 00-2-2h-1.586a1 1 0 01-.707-.293l-1.121-1.121A2 2 0 0011.172 3H8.828a2 2 0 00-1.414.586L6.293 4.707A1 1 0 015.586 5H4zm6 9a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"></path></svg>
+                        <div id="shutter-overlay" class="hidden absolute inset-0 flex flex-col items-center justify-end p-8 z-30">
+                            <button id="btn-capture" class="shutter-btn bg-white active:scale-90 text-indigo-600 w-20 h-20 rounded-full flex items-center justify-center transition-all shadow-[0_0_30px_rgba(255,255,255,0.2)]">
+                                <svg class="w-10 h-10" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 5a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V7a2 2 0 00-2-2h-1.586a1 1 0 01-.707-.293l-1.121-1.121A2 2 0 0011.172 3H8.828a2 2 0 00-1.414.586L6.293 4.707A1 1 0 015.586 5H4zm6 9a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"></path></svg>
                             </button>
-                            <p class="mt-6 text-white text-[10px] font-black uppercase tracking-[0.4em] drop-shadow-lg opacity-60">Tocar para leer</p>
+                            <p class="mt-4 text-white text-[9px] font-black uppercase tracking-[0.4em] drop-shadow-lg opacity-60">Tocar para leer</p>
                         </div>
 
                         <!-- Estado Inicial Cámara -->
@@ -137,11 +137,9 @@
 
                 <!-- Modal de Confirmación -->
                 <div id="confirmation-zone" class="hidden mt-4 animate-fade-in">
-                    <div class="bg-indigo-600/10 border border-indigo-500/30 p-8 rounded-[2.5rem] text-center">
+                    <div class="bg-indigo-600/10 border border-indigo-500/30 p-10 rounded-[2.5rem] text-center">
                         <p class="text-indigo-400 text-[9px] font-black uppercase tracking-[0.5em] mb-4">Caja Identificada</p>
-                        <div class="px-4 mb-10">
-                            <h2 id="found-box-id" class="text-lg sm:text-xl font-black text-white tracking-tight break-all leading-tight">ID_BOX</h2>
-                        </div>
+                        <h2 id="found-box-id" class="text-5xl font-black text-white mb-10 tracking-tighter">ID_BOX</h2>
                         <div class="flex flex-col gap-4">
                             <button id="btn-confirm-arribo" class="w-full py-5 bg-green-600 hover:bg-green-500 text-white font-black text-xl rounded-2xl transition-all shadow-xl uppercase tracking-widest active:scale-95">
                                 CONFIRMAR
@@ -252,8 +250,8 @@
                     const li = document.createElement('li');
                     li.className = 'p-5 hover:bg-indigo-600/10 cursor-pointer flex justify-between items-center transition-all active:bg-indigo-600';
                     const boxId = safeString(rec.fields.ID_Caja);
-                    li.innerHTML = `<span class="font-bold tracking-tight text-white">${boxId}</span><span class="text-indigo-500 font-black text-[9px] uppercase tracking-widest">Seleccionar →</span>`;
-                    li.onclick = () => showConfirmation(rec); // Aquí mostramos el segundo tap (CONFIRMAR)
+                    li.innerHTML = `<span class="font-bold tracking-tight text-white">${boxId}</span><span class="text-indigo-500 font-black text-[9px] uppercase tracking-widest">Ver →</span>`;
+                    li.onclick = () => showConfirmation(rec);
                     dom.list.appendChild(li);
                 });
             } catch (e) { showMessage(e.message, 'error'); }
@@ -292,9 +290,10 @@
             }
 
             try {
+                // Ajuste de área rectangular (320x150) para evitar escanear códigos adyacentes
                 await html5QrCode.start(
                     { facingMode: "environment" },
-                    { fps: 20, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 },
+                    { fps: 20, qrbox: { width: 320, height: 150 }, aspectRatio: 1.7777777778 },
                     (text) => {
                         if (isListening) {
                             isListening = false;
