@@ -1,25 +1,403 @@
 
 <!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Airtable Warehouse Scanner</title>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Logística Bodega | Gestión de Arribos</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
-  <script type="importmap">
+    <style>
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes flashEffect {
+            0% { background: rgba(255,255,255,0); }
+            50% { background: rgba(255,255,255,0.8); }
+            100% { background: rgba(255,255,255,0); }
+        }
+        .animate-fade-in { animation: fadeIn 0.3s ease-out; }
+        .flash-active { animation: flashEffect 0.4s ease-out; }
+        
+        #reader video {
+            border-radius: 20px;
+            object-fit: cover !important;
+            width: 100% !important;
+            height: 100% !important;
+        }
+        #reader { border: none !important; background: #000; }
+        
+        .shutter-btn {
+            box-shadow: 0 0 0 6px rgba(79, 70, 229, 0.2);
+        }
+    </style>
+<script type="importmap">
 {
   "imports": {
-    "react/": "https://esm.sh/react@^19.2.3/",
     "react": "https://esm.sh/react@^19.2.3",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.3/"
+    "react/": "https://esm.sh/react@^19.2.3/"
   }
 }
 </script>
 </head>
-  <body class="bg-gray-900 text-white">
-    <div id="root"></div>
-    <script type="module" src="/index.tsx"></script>
-  </body>
+<body class="bg-gray-900 text-white min-h-screen font-sans selection:bg-indigo-500">
+
+    <!-- PANTALLA DE CONFIGURACIÓN -->
+    <div id="config-screen" class="hidden flex flex-col items-center justify-center min-h-screen p-6">
+        <div class="w-full max-w-md bg-gray-800 rounded-3xl shadow-2xl p-8 border border-gray-700">
+            <h1 class="text-3xl font-black text-center mb-2 tracking-tight">Setup Airtable</h1>
+            <p class="text-center text-gray-400 mb-8 text-sm">Configura tu terminal logística</p>
+            
+            <form id="config-form" class="space-y-6">
+                <div>
+                    <label class="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Airtable Token (PAT)</label>
+                    <input type="password" id="pat" required class="w-full bg-gray-900 border border-gray-700 text-white rounded-2xl p-5 focus:ring-2 focus:ring-indigo-500 outline-none transition-all placeholder-gray-700" placeholder="pat...">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Base ID</label>
+                    <input type="text" id="baseId" required class="w-full bg-gray-900 border border-gray-700 text-white rounded-2xl p-5 focus:ring-2 focus:ring-indigo-500 outline-none transition-all placeholder-gray-700" placeholder="app...">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Table ID</label>
+                    <input type="text" id="tableId" required class="w-full bg-gray-900 border border-gray-700 text-white rounded-2xl p-5 focus:ring-2 focus:ring-indigo-500 outline-none transition-all placeholder-gray-700" placeholder="tbl...">
+                </div>
+                
+                <div id="config-error" class="hidden p-4 bg-red-900/30 border border-red-700/50 text-red-400 rounded-2xl text-xs text-center font-bold"></div>
+                
+                <button type="submit" class="w-full py-5 bg-indigo-600 hover:bg-indigo-500 text-white font-black rounded-2xl transition-all shadow-xl uppercase tracking-widest text-xs">
+                    Conectar Terminal
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- PANTALLA PRINCIPAL -->
+    <div id="main-screen" class="hidden min-h-screen flex flex-col p-4">
+        <header class="flex justify-between items-center mb-6 max-w-2xl mx-auto w-full px-2">
+            <div class="flex flex-col">
+                <h1 class="text-2xl font-black tracking-tighter">BODEGA<span class="text-indigo-500">PRO</span></h1>
+                <span class="text-[9px] text-gray-500 font-black uppercase tracking-[0.3em]">Recepción de Arribos</span>
+            </div>
+            <button id="btn-clear-config" class="text-[9px] font-black text-gray-600 hover:text-red-400 uppercase tracking-widest border border-gray-800 px-5 py-2 rounded-full transition-all bg-black/40">
+                Salir
+            </button>
+        </header>
+
+        <main class="w-full max-w-2xl mx-auto bg-gray-800 rounded-[2.5rem] shadow-2xl flex-grow flex flex-col border border-gray-700 overflow-hidden relative">
+            <!-- Navegación por Tabs -->
+            <div class="flex bg-gray-900/90 p-1.5 m-3 rounded-[1.5rem] border border-gray-700/50">
+                <button id="tab-scanner" class="flex-1 py-3.5 font-black text-[10px] uppercase tracking-widest rounded-xl transition-all bg-indigo-600 text-white shadow-lg">Escanear Cámara</button>
+                <button id="tab-manual" class="flex-1 py-3.5 font-black text-[10px] uppercase tracking-widest rounded-xl transition-all text-gray-500 hover:text-white">Lista de Cajas</button>
+            </div>
+
+            <div class="px-6 pb-6 flex-grow flex flex-col">
+                <div id="message-container"></div>
+
+                <!-- Sección Scanner -->
+                <div id="section-scanner" class="flex-grow flex flex-col items-center">
+                    <div id="reader-container" class="w-full aspect-square relative bg-black rounded-[2rem] overflow-hidden border-2 border-gray-700 shadow-2xl">
+                        <div id="reader" class="w-full h-full"></div>
+                        
+                        <!-- Capa Flash -->
+                        <div id="flash-layer" class="absolute inset-0 pointer-events-none z-40"></div>
+
+                        <!-- Botón Disparador -->
+                        <div id="shutter-overlay" class="hidden absolute inset-0 flex flex-col items-center justify-end p-10 z-30">
+                            <button id="btn-capture" class="shutter-btn bg-white active:scale-90 text-indigo-600 w-24 h-24 rounded-full flex items-center justify-center transition-all shadow-[0_0_30px_rgba(255,255,255,0.2)]">
+                                <svg class="w-12 h-12" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 5a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V7a2 2 0 00-2-2h-1.586a1 1 0 01-.707-.293l-1.121-1.121A2 2 0 0011.172 3H8.828a2 2 0 00-1.414.586L6.293 4.707A1 1 0 015.586 5H4zm6 9a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"></path></svg>
+                            </button>
+                            <p class="mt-6 text-white text-[10px] font-black uppercase tracking-[0.4em] drop-shadow-lg opacity-60">Tocar para leer</p>
+                        </div>
+
+                        <!-- Estado Inicial Cámara -->
+                        <div id="scanner-placeholder" class="absolute inset-0 flex flex-col items-center justify-center p-8 text-center bg-gray-900 z-50">
+                            <button id="btn-start-camera" class="bg-indigo-600 hover:bg-indigo-500 px-10 py-5 rounded-2xl font-black text-[11px] shadow-2xl uppercase tracking-widest transition-all active:scale-95">
+                                Iniciar Cámara
+                            </button>
+                        </div>
+                    </div>
+                    <div class="mt-6 text-center text-gray-500 text-[10px] font-bold uppercase tracking-widest">
+                        Apunta al código y presiona el botón blanco
+                    </div>
+                </div>
+
+                <!-- Sección Lista Manual -->
+                <div id="section-manual" class="hidden flex-grow flex flex-col">
+                    <div class="mb-4">
+                        <input type="text" id="manual-search-input" class="w-full bg-gray-900 border border-gray-700 text-white rounded-2xl p-5 text-lg outline-none focus:ring-2 focus:ring-indigo-500 transition-all shadow-inner placeholder-gray-700" placeholder="Buscar ID de caja...">
+                    </div>
+                    <div class="flex-grow bg-gray-900 rounded-[1.5rem] border border-gray-700 flex flex-col overflow-hidden">
+                        <div class="px-6 py-4 bg-gray-800/40 border-b border-gray-700 flex justify-between items-center">
+                            <h3 class="text-[10px] font-black text-gray-500 uppercase tracking-widest">Pendientes</h3>
+                            <span id="count-badge" class="bg-indigo-600/10 text-indigo-400 text-[10px] px-3 py-1 rounded-full font-black">0</span>
+                        </div>
+                        <ul id="suggestions-list" class="overflow-y-auto max-h-[380px] divide-y divide-gray-800/50">
+                            <!-- Items -->
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Modal de Confirmación -->
+                <div id="confirmation-zone" class="hidden mt-4 animate-fade-in">
+                    <div class="bg-indigo-600/10 border border-indigo-500/30 p-10 rounded-[2.5rem] text-center">
+                        <p class="text-indigo-400 text-[9px] font-black uppercase tracking-[0.5em] mb-4">Caja Identificada</p>
+                        <h2 id="found-box-id" class="text-5xl font-black text-white mb-10 tracking-tighter">ID_BOX</h2>
+                        <div class="flex flex-col gap-4">
+                            <button id="btn-confirm-arribo" class="w-full py-5 bg-green-600 hover:bg-green-500 text-white font-black text-xl rounded-2xl transition-all shadow-xl uppercase tracking-widest active:scale-95">
+                                CONFIRMAR
+                            </button>
+                            <button id="btn-cancel-confirmation" class="w-full py-3 text-gray-500 font-bold uppercase text-[10px] tracking-widest hover:text-gray-300">
+                                Volver Atrás
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // --- ESTADO ---
+        let credentials = { pat: '', baseId: '', tableId: '' };
+        let currentMode = 'scanner'; 
+        let html5QrCode = null;
+        let foundRecord = null;
+        let isListening = false;
+        let searchTimer = null;
+
+        const dom = {
+            config: document.getElementById('config-screen'),
+            main: document.getElementById('main-screen'),
+            scanner: document.getElementById('section-scanner'),
+            manual: document.getElementById('section-manual'),
+            confirmation: document.getElementById('confirmation-zone'),
+            list: document.getElementById('suggestions-list'),
+            badge: document.getElementById('count-badge'),
+            searchInput: document.getElementById('manual-search-input'),
+            foundId: document.getElementById('found-box-id'),
+            msg: document.getElementById('message-container'),
+            placeholder: document.getElementById('scanner-placeholder'),
+            shutter: document.getElementById('shutter-overlay'),
+            flash: document.getElementById('flash-layer'),
+            patInput: document.getElementById('pat'),
+            baseInput: document.getElementById('baseId'),
+            tableInput: document.getElementById('tableId')
+        };
+
+        // --- UTILIDADES ---
+        const safeString = (val) => {
+            if (val === null || val === undefined) return '';
+            if (Array.isArray(val)) return safeString(val[0]);
+            if (typeof val === 'object') return val.name || val.text || JSON.stringify(val);
+            return String(val);
+        };
+
+        const showMessage = (text, type = 'info') => {
+            const colors = { success: 'bg-green-600', error: 'bg-red-600', warning: 'bg-yellow-500 text-black', info: 'bg-indigo-600' };
+            dom.msg.innerHTML = `<div class="p-5 ${colors[type]} text-white font-black rounded-2xl mb-4 text-center animate-fade-in shadow-xl text-xs uppercase tracking-widest">${text}</div>`;
+            if (type !== 'info') setTimeout(() => { if (dom.msg.innerText.includes(text)) dom.msg.innerHTML = ''; }, 3500);
+        };
+
+        const fetchAirtable = async (endpoint, options = {}) => {
+            const url = `https://api.airtable.com/v0/${credentials.baseId}/${credentials.tableId}${endpoint}`;
+            const res = await fetch(url, {
+                ...options,
+                headers: { 'Authorization': `Bearer ${credentials.pat}`, 'Content-Type': 'application/json', ...options.headers }
+            });
+            if (!res.ok) throw new Error('Error en Airtable');
+            return res.json();
+        };
+
+        const searchBox = async (id) => {
+            if (!id || foundRecord) return;
+            const cleanId = safeString(id);
+            try {
+                showMessage(`Buscando ${cleanId}...`, 'info');
+                const formula = `{ID_Caja} = '${cleanId.trim().replace(/'/g, "\\'")}'`;
+                const data = await fetchAirtable(`?filterByFormula=${encodeURIComponent(formula)}&maxRecords=1`);
+                
+                if (data.records.length > 0) {
+                    const record = data.records[0];
+                    if (record.fields.Status_arribo) {
+                        showMessage("Caja ya recibida anteriormente", "warning");
+                    } else {
+                        showConfirmation(record);
+                    }
+                } else {
+                    showMessage("El ID no existe en la base", "error");
+                }
+            } catch (e) {
+                showMessage(e.message, "error");
+            } finally {
+                isListening = false;
+            }
+        };
+
+        const refreshList = async (query = '') => {
+            try {
+                dom.list.innerHTML = '<div class="p-10 text-center text-gray-700 text-[10px] font-black uppercase tracking-widest">Sincronizando...</div>';
+                let formula = '{Status_arribo} != 1';
+                if (query.trim()) {
+                    formula = `AND(SEARCH(LOWER("${query.replace(/"/g, '\\"')}") , LOWER({ID_Caja} & "")), {Status_arribo} != 1)`;
+                }
+                const data = await fetchAirtable(`?filterByFormula=${encodeURIComponent(formula)}&maxRecords=50&sort[0][field]=ID_Caja`);
+                
+                dom.list.innerHTML = '';
+                dom.badge.innerText = data.records.length;
+                if (data.records.length === 0) {
+                    dom.list.innerHTML = '<div class="p-10 text-center text-gray-600 text-[10px] font-black uppercase tracking-widest">Sin resultados</div>';
+                    return;
+                }
+                data.records.forEach(rec => {
+                    const li = document.createElement('li');
+                    li.className = 'p-5 hover:bg-indigo-600/10 cursor-pointer flex justify-between items-center transition-all active:bg-indigo-600';
+                    const boxId = safeString(rec.fields.ID_Caja);
+                    li.innerHTML = `<span class="font-bold tracking-tight text-white">${boxId}</span><span class="text-indigo-500 font-black text-[9px] uppercase tracking-widest">Ver →</span>`;
+                    li.onclick = () => showConfirmation(rec);
+                    dom.list.appendChild(li);
+                });
+            } catch (e) { showMessage(e.message, 'error'); }
+        };
+
+        const showConfirmation = (record) => {
+            foundRecord = record;
+            dom.foundId.innerText = safeString(record.fields.ID_Caja);
+            dom.scanner.classList.add('hidden');
+            dom.manual.classList.add('hidden');
+            dom.confirmation.classList.remove('hidden');
+            dom.msg.innerHTML = '';
+            stopScanner();
+        };
+
+        const hideConfirmation = () => {
+            foundRecord = null;
+            dom.confirmation.classList.add('hidden');
+            if (currentMode === 'scanner') {
+                dom.scanner.classList.remove('hidden');
+                startScanner();
+            } else {
+                dom.manual.classList.remove('hidden');
+                refreshList(dom.searchInput.value);
+            }
+        };
+
+        // --- CAMERA ENGINE ---
+        const startScanner = async () => {
+            dom.placeholder.classList.add('hidden');
+            if (!html5QrCode) html5QrCode = new Html5Qrcode("reader");
+            
+            if (html5QrCode.isScanning) {
+                dom.shutter.classList.remove('hidden');
+                return;
+            }
+
+            try {
+                await html5QrCode.start(
+                    { facingMode: "environment" },
+                    { fps: 20, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 },
+                    (text) => {
+                        if (isListening) {
+                            isListening = false;
+                            dom.flash.classList.add('flash-active');
+                            setTimeout(() => dom.flash.classList.remove('flash-active'), 400);
+                            if (navigator.vibrate) navigator.vibrate(80);
+                            searchBox(text);
+                        }
+                    },
+                    () => {}
+                );
+                dom.shutter.classList.remove('hidden');
+            } catch (err) {
+                dom.placeholder.classList.remove('hidden');
+                showMessage("Acceso a cámara requerido", "error");
+            }
+        };
+
+        const stopScanner = async () => {
+            dom.shutter.classList.add('hidden');
+            if (html5QrCode && html5QrCode.isScanning) {
+                try { await html5QrCode.stop(); } catch (e) {}
+            }
+            dom.placeholder.classList.remove('hidden');
+        };
+
+        const switchMode = (mode) => {
+            currentMode = mode;
+            document.getElementById('tab-scanner').className = `flex-1 py-3.5 font-black text-[10px] uppercase tracking-widest rounded-xl transition-all ${mode === 'scanner' ? 'bg-indigo-600 text-white shadow-lg' : 'text-gray-500'}`;
+            document.getElementById('tab-manual').className = `flex-1 py-3.5 font-black text-[10px] uppercase tracking-widest rounded-xl transition-all ${mode === 'manual' ? 'bg-indigo-600 text-white shadow-lg' : 'text-gray-500'}`;
+            
+            dom.confirmation.classList.add('hidden');
+            dom.msg.innerHTML = '';
+            if (mode === 'scanner') {
+                dom.manual.classList.add('hidden');
+                dom.scanner.classList.remove('hidden');
+                startScanner();
+            } else {
+                stopScanner();
+                dom.scanner.classList.add('hidden');
+                dom.manual.classList.remove('hidden');
+                refreshList(dom.searchInput.value);
+            }
+        };
+
+        // --- HANDLERS ---
+        document.getElementById('btn-capture').onclick = () => {
+            isListening = true;
+            showMessage("Capturando...", "info");
+            setTimeout(() => { if(isListening) { isListening = false; showMessage("No se detectó nada", "warning"); }}, 3000);
+        };
+
+        document.getElementById('btn-start-camera').onclick = startScanner;
+        document.getElementById('tab-scanner').onclick = () => switchMode('scanner');
+        document.getElementById('tab-manual').onclick = () => switchMode('manual');
+        document.getElementById('btn-cancel-confirmation').onclick = hideConfirmation;
+
+        document.getElementById('config-form').onsubmit = async (e) => {
+            e.preventDefault();
+            credentials = { pat: dom.patInput.value, baseId: dom.baseInput.value, tableId: dom.tableInput.value };
+            try {
+                await fetchAirtable('?maxRecords=1');
+                localStorage.setItem('ab_pat', credentials.pat);
+                localStorage.setItem('ab_base', credentials.baseId);
+                localStorage.setItem('ab_table', credentials.tableId);
+                dom.config.classList.add('hidden');
+                dom.main.classList.remove('hidden');
+                switchMode('scanner');
+            } catch (err) {
+                document.getElementById('config-error').innerText = "Conexión fallida. Revisa los IDs.";
+                document.getElementById('config-error').classList.remove('hidden');
+            }
+        };
+
+        document.getElementById('btn-clear-config').onclick = () => { if(confirm('¿Desvincular terminal?')){ localStorage.clear(); location.reload(); } };
+
+        document.getElementById('btn-confirm-arribo').onclick = async () => {
+            const btn = document.getElementById('btn-confirm-arribo');
+            btn.disabled = true; btn.innerText = 'GUARDANDO...';
+            try {
+                await fetchAirtable(`/${foundRecord.id}`, { method: 'PATCH', body: JSON.stringify({ fields: { Status_arribo: true } }) });
+                showMessage('¡Caja registrada con éxito!', 'success');
+                hideConfirmation();
+            } catch (e) {
+                showMessage(e.message, 'error');
+                btn.disabled = false; btn.innerText = 'CONFIRMAR';
+            }
+        };
+
+        dom.searchInput.oninput = (e) => {
+            clearTimeout(searchTimer);
+            searchTimer = setTimeout(() => refreshList(e.target.value), 400);
+        };
+
+        window.onload = () => {
+            const p = localStorage.getItem('ab_pat'), b = localStorage.getItem('ab_base'), t = localStorage.getItem('ab_table');
+            if (p && b && t) {
+                credentials = { pat: p, baseId: b, tableId: t };
+                dom.patInput.value = p; dom.baseInput.value = b; dom.tableInput.value = t;
+                dom.main.classList.remove('hidden');
+                switchMode('scanner');
+            } else {
+                dom.config.classList.remove('hidden');
+            }
+        };
+    </script>
+</body>
 </html>
