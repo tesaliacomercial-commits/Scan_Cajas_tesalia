@@ -25,15 +25,42 @@
         }
         #reader { border: none !important; background: #000; }
         
+        /* Retícula de Enfoque */
+        .focus-frame {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 320px;
+            height: 150px;
+            pointer-events: none;
+            z-index: 45;
+        }
+        .corner {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,0.4);
+            transition: all 0.2s ease;
+        }
+        .detecting .corner {
+            border-color: #22c55e !important;
+            box-shadow: 0 0 15px rgba(34, 197, 94, 0.5);
+        }
+        .corner-tl { top: 0; left: 0; border-right: 0; border-bottom: 0; }
+        .corner-tr { top: 0; right: 0; border-left: 0; border-bottom: 0; }
+        .corner-bl { bottom: 0; left: 0; border-right: 0; border-top: 0; }
+        .corner-br { bottom: 0; right: 0; border-left: 0; border-top: 0; }
+
         .shutter-btn {
-            box-shadow: 0 0 0 6px rgba(79, 70, 229, 0.2);
+            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
         }
     </style>
 <script type="importmap">
 {
   "imports": {
-    "react": "https://esm.sh/react@^19.2.3",
-    "react/": "https://esm.sh/react@^19.2.3/"
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "react": "https://esm.sh/react@^19.2.3"
   }
 }
 </script>
@@ -71,81 +98,86 @@
 
     <!-- PANTALLA PRINCIPAL -->
     <div id="main-screen" class="hidden min-h-screen flex flex-col p-4">
-        <header class="flex justify-between items-center mb-6 max-w-2xl mx-auto w-full px-2">
+        <header class="flex justify-between items-center mb-4 max-w-2xl mx-auto w-full px-2">
             <div class="flex flex-col">
-                <h1 class="text-2xl font-black tracking-tighter">BODEGA<span class="text-indigo-500">PRO</span></h1>
-                <span class="text-[9px] text-gray-500 font-black uppercase tracking-[0.3em]">Recepción de Arribos</span>
+                <h1 class="text-xl font-black tracking-tighter">BODEGA<span class="text-indigo-500">PRO</span></h1>
+                <span class="text-[8px] text-gray-600 font-black uppercase tracking-[0.3em]">Logística Activa</span>
             </div>
-            <button id="btn-clear-config" class="text-[9px] font-black text-gray-600 hover:text-red-400 uppercase tracking-widest border border-gray-800 px-5 py-2 rounded-full transition-all bg-black/40">
+            <button id="btn-clear-config" class="text-[8px] font-black text-gray-600 hover:text-red-400 uppercase tracking-widest border border-gray-800 px-4 py-1.5 rounded-full transition-all bg-black/40">
                 Salir
             </button>
         </header>
 
-        <main class="w-full max-w-2xl mx-auto bg-gray-800 rounded-[2.5rem] shadow-2xl flex-grow flex flex-col border border-gray-700 overflow-hidden relative">
-            <!-- Navegación por Tabs -->
-            <div class="flex bg-gray-900/90 p-1.5 m-3 rounded-[1.5rem] border border-gray-700/50">
-                <button id="tab-scanner" class="flex-1 py-3.5 font-black text-[10px] uppercase tracking-widest rounded-xl transition-all bg-indigo-600 text-white shadow-lg">Escanear Cámara</button>
-                <button id="tab-manual" class="flex-1 py-3.5 font-black text-[10px] uppercase tracking-widest rounded-xl transition-all text-gray-500 hover:text-white">Lista de Cajas</button>
+        <main class="w-full max-w-2xl mx-auto bg-gray-800 rounded-[2rem] shadow-2xl flex-grow flex flex-col border border-gray-700 overflow-hidden relative">
+            <!-- Tabs -->
+            <div class="flex bg-gray-900/90 p-1 m-3 rounded-2xl border border-gray-700/50">
+                <button id="tab-scanner" class="flex-1 py-3 font-black text-[9px] uppercase tracking-widest rounded-xl transition-all bg-indigo-600 text-white shadow-lg">Cámara</button>
+                <button id="tab-manual" class="flex-1 py-3 font-black text-[9px] uppercase tracking-widest rounded-xl transition-all text-gray-500 hover:text-white">Lista Pendientes</button>
             </div>
 
-            <div class="px-6 pb-6 flex-grow flex flex-col">
+            <div class="px-5 pb-5 flex-grow flex flex-col">
                 <div id="message-container"></div>
 
                 <!-- Sección Scanner -->
-                <div id="section-scanner" class="flex-grow flex flex-col items-center">
-                    <div id="reader-container" class="w-full aspect-video relative bg-black rounded-[2rem] overflow-hidden border-2 border-gray-700 shadow-2xl">
+                <div id="section-scanner" class="flex-grow flex flex-col">
+                    <!-- Contenedor de Video -->
+                    <div id="reader-container" class="w-full aspect-video relative bg-black rounded-3xl overflow-hidden border border-gray-700 shadow-inner">
                         <div id="reader" class="w-full h-full"></div>
                         
-                        <!-- Capa Flash -->
-                        <div id="flash-layer" class="absolute inset-0 pointer-events-none z-40"></div>
-
-                        <!-- Botón Disparador -->
-                        <div id="shutter-overlay" class="hidden absolute inset-0 flex flex-col items-center justify-end p-8 z-30">
-                            <button id="btn-capture" class="shutter-btn bg-white active:scale-90 text-indigo-600 w-20 h-20 rounded-full flex items-center justify-center transition-all shadow-[0_0_30px_rgba(255,255,255,0.2)]">
-                                <svg class="w-10 h-10" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 5a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V7a2 2 0 00-2-2h-1.586a1 1 0 01-.707-.293l-1.121-1.121A2 2 0 0011.172 3H8.828a2 2 0 00-1.414.586L6.293 4.707A1 1 0 015.586 5H4zm6 9a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"></path></svg>
-                            </button>
-                            <p class="mt-4 text-white text-[9px] font-black uppercase tracking-[0.4em] drop-shadow-lg opacity-60">Tocar para leer</p>
+                        <!-- Retícula de Enfoque -->
+                        <div id="reticle" class="focus-frame">
+                            <div class="corner corner-tl"></div>
+                            <div class="corner corner-tr"></div>
+                            <div class="corner corner-bl"></div>
+                            <div class="corner corner-br"></div>
                         </div>
+
+                        <div id="flash-layer" class="absolute inset-0 pointer-events-none z-40"></div>
 
                         <!-- Estado Inicial Cámara -->
                         <div id="scanner-placeholder" class="absolute inset-0 flex flex-col items-center justify-center p-8 text-center bg-gray-900 z-50">
-                            <button id="btn-start-camera" class="bg-indigo-600 hover:bg-indigo-500 px-10 py-5 rounded-2xl font-black text-[11px] shadow-2xl uppercase tracking-widest transition-all active:scale-95">
-                                Iniciar Cámara
+                            <button id="btn-start-camera" class="bg-indigo-600 hover:bg-indigo-500 px-8 py-4 rounded-2xl font-black text-[10px] shadow-2xl uppercase tracking-widest transition-all">
+                                Activar Cámara
                             </button>
                         </div>
                     </div>
-                    <div class="mt-6 text-center text-gray-500 text-[10px] font-bold uppercase tracking-widest">
-                        Apunta al código y presiona el botón blanco
+
+                    <!-- Controles Scanner (Bajo la imagen) -->
+                    <div id="scanner-controls" class="mt-6 flex flex-col items-center">
+                        <button id="btn-capture" class="shutter-btn bg-white active:scale-95 text-indigo-600 w-16 h-16 rounded-full flex items-center justify-center transition-all shadow-xl">
+                            <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 5a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V7a2 2 0 00-2-2h-1.586a1 1 0 01-.707-.293l-1.121-1.121A2 2 0 0011.172 3H8.828a2 2 0 00-1.414.586L6.293 4.707A1 1 0 015.586 5H4zm6 9a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"></path></svg>
+                        </button>
+                        <p class="mt-4 text-gray-500 text-[9px] font-black uppercase tracking-[0.3em]">Centrar código y presionar botón</p>
                     </div>
                 </div>
 
                 <!-- Sección Lista Manual -->
                 <div id="section-manual" class="hidden flex-grow flex flex-col">
                     <div class="mb-4">
-                        <input type="text" id="manual-search-input" class="w-full bg-gray-900 border border-gray-700 text-white rounded-2xl p-5 text-lg outline-none focus:ring-2 focus:ring-indigo-500 transition-all shadow-inner placeholder-gray-700" placeholder="Buscar ID de caja...">
+                        <input type="text" id="manual-search-input" class="w-full bg-gray-900 border border-gray-700 text-white rounded-2xl p-4 text-sm outline-none focus:ring-2 focus:ring-indigo-500 transition-all placeholder-gray-700" placeholder="Buscar ID de caja...">
                     </div>
-                    <div class="flex-grow bg-gray-900 rounded-[1.5rem] border border-gray-700 flex flex-col overflow-hidden">
-                        <div class="px-6 py-4 bg-gray-800/40 border-b border-gray-700 flex justify-between items-center">
-                            <h3 class="text-[10px] font-black text-gray-500 uppercase tracking-widest">Pendientes</h3>
-                            <span id="count-badge" class="bg-indigo-600/10 text-indigo-400 text-[10px] px-3 py-1 rounded-full font-black">0</span>
+                    <div class="flex-grow bg-gray-900 rounded-2xl border border-gray-700 flex flex-col overflow-hidden">
+                        <div class="px-5 py-3 bg-gray-800/40 border-b border-gray-700 flex justify-between items-center">
+                            <h3 class="text-[9px] font-black text-gray-500 uppercase tracking-widest">Disponibles</h3>
+                            <span id="count-badge" class="bg-indigo-600/10 text-indigo-400 text-[9px] px-2.5 py-1 rounded-full font-black border border-indigo-500/20">0</span>
                         </div>
-                        <ul id="suggestions-list" class="overflow-y-auto max-h-[380px] divide-y divide-gray-800/50">
+                        <ul id="suggestions-list" class="overflow-y-auto max-h-[300px] divide-y divide-gray-800/50">
                             <!-- Items -->
                         </ul>
                     </div>
                 </div>
 
                 <!-- Modal de Confirmación -->
-                <div id="confirmation-zone" class="hidden mt-4 animate-fade-in">
-                    <div class="bg-indigo-600/10 border border-indigo-500/30 p-10 rounded-[2.5rem] text-center">
-                        <p class="text-indigo-400 text-[9px] font-black uppercase tracking-[0.5em] mb-4">Caja Identificada</p>
-                        <h2 id="found-box-id" class="text-5xl font-black text-white mb-10 tracking-tighter">ID_BOX</h2>
-                        <div class="flex flex-col gap-4">
-                            <button id="btn-confirm-arribo" class="w-full py-5 bg-green-600 hover:bg-green-500 text-white font-black text-xl rounded-2xl transition-all shadow-xl uppercase tracking-widest active:scale-95">
-                                CONFIRMAR
+                <div id="confirmation-zone" class="hidden mt-2 animate-fade-in">
+                    <div class="bg-indigo-600/5 border border-indigo-500/20 p-8 rounded-[2rem] text-center shadow-inner">
+                        <p class="text-indigo-400 text-[8px] font-black uppercase tracking-[0.4em] mb-4">Caja Identificada</p>
+                        <h2 id="found-box-id" class="text-3xl font-black text-white mb-8 tracking-tighter break-all">ID_BOX</h2>
+                        <div class="flex flex-col gap-3">
+                            <button id="btn-confirm-arribo" class="w-full py-4 bg-green-600 hover:bg-green-500 text-white font-black text-lg rounded-2xl transition-all shadow-xl uppercase tracking-widest active:scale-95">
+                                CONFIRMAR INGRESO
                             </button>
-                            <button id="btn-cancel-confirmation" class="w-full py-3 text-gray-500 font-bold uppercase text-[10px] tracking-widest hover:text-gray-300">
-                                Volver Atrás
+                            <button id="btn-cancel-confirmation" class="w-full py-2 text-gray-600 font-bold uppercase text-[9px] tracking-widest hover:text-gray-400">
+                                ← Cancelar
                             </button>
                         </div>
                     </div>
@@ -175,8 +207,8 @@
             foundId: document.getElementById('found-box-id'),
             msg: document.getElementById('message-container'),
             placeholder: document.getElementById('scanner-placeholder'),
-            shutter: document.getElementById('shutter-overlay'),
             flash: document.getElementById('flash-layer'),
+            reticle: document.getElementById('reticle'),
             patInput: document.getElementById('pat'),
             baseInput: document.getElementById('baseId'),
             tableInput: document.getElementById('tableId')
@@ -192,7 +224,7 @@
 
         const showMessage = (text, type = 'info') => {
             const colors = { success: 'bg-green-600', error: 'bg-red-600', warning: 'bg-yellow-500 text-black', info: 'bg-indigo-600' };
-            dom.msg.innerHTML = `<div class="p-5 ${colors[type]} text-white font-black rounded-2xl mb-4 text-center animate-fade-in shadow-xl text-xs uppercase tracking-widest">${text}</div>`;
+            dom.msg.innerHTML = `<div class="p-4 ${colors[type]} text-white font-black rounded-xl mb-4 text-center animate-fade-in shadow-lg text-[10px] uppercase tracking-widest">${text}</div>`;
             if (type !== 'info') setTimeout(() => { if (dom.msg.innerText.includes(text)) dom.msg.innerHTML = ''; }, 3500);
         };
 
@@ -210,30 +242,31 @@
             if (!id || foundRecord) return;
             const cleanId = safeString(id);
             try {
-                showMessage(`Buscando ${cleanId}...`, 'info');
+                showMessage(`Procesando ${cleanId}...`, 'info');
                 const formula = `{ID_Caja} = '${cleanId.trim().replace(/'/g, "\\'")}'`;
                 const data = await fetchAirtable(`?filterByFormula=${encodeURIComponent(formula)}&maxRecords=1`);
                 
                 if (data.records.length > 0) {
                     const record = data.records[0];
                     if (record.fields.Status_arribo) {
-                        showMessage("Caja ya recibida anteriormente", "warning");
+                        showMessage("Caja ya registrada", "warning");
                     } else {
                         showConfirmation(record);
                     }
                 } else {
-                    showMessage("El ID no existe en la base", "error");
+                    showMessage("ID no encontrado en base", "error");
                 }
             } catch (e) {
                 showMessage(e.message, "error");
             } finally {
                 isListening = false;
+                dom.reticle.classList.remove('detecting');
             }
         };
 
         const refreshList = async (query = '') => {
             try {
-                dom.list.innerHTML = '<div class="p-10 text-center text-gray-700 text-[10px] font-black uppercase tracking-widest">Sincronizando...</div>';
+                dom.list.innerHTML = '<div class="p-8 text-center text-gray-700 text-[9px] font-black uppercase tracking-widest">Sincronizando...</div>';
                 let formula = '{Status_arribo} != 1';
                 if (query.trim()) {
                     formula = `AND(SEARCH(LOWER("${query.replace(/"/g, '\\"')}") , LOWER({ID_Caja} & "")), {Status_arribo} != 1)`;
@@ -243,14 +276,14 @@
                 dom.list.innerHTML = '';
                 dom.badge.innerText = data.records.length;
                 if (data.records.length === 0) {
-                    dom.list.innerHTML = '<div class="p-10 text-center text-gray-600 text-[10px] font-black uppercase tracking-widest">Sin resultados</div>';
+                    dom.list.innerHTML = '<div class="p-8 text-center text-gray-700 text-[9px] font-black uppercase tracking-widest">Sin resultados</div>';
                     return;
                 }
                 data.records.forEach(rec => {
                     const li = document.createElement('li');
-                    li.className = 'p-5 hover:bg-indigo-600/10 cursor-pointer flex justify-between items-center transition-all active:bg-indigo-600';
+                    li.className = 'p-4 hover:bg-indigo-600/10 cursor-pointer flex justify-between items-center transition-all active:bg-indigo-600';
                     const boxId = safeString(rec.fields.ID_Caja);
-                    li.innerHTML = `<span class="font-bold tracking-tight text-white">${boxId}</span><span class="text-indigo-500 font-black text-[9px] uppercase tracking-widest">Ver →</span>`;
+                    li.innerHTML = `<span class="font-bold tracking-tight text-white text-sm">${boxId}</span><span class="text-indigo-500 font-black text-[8px] uppercase tracking-widest">Ver →</span>`;
                     li.onclick = () => showConfirmation(rec);
                     dom.list.appendChild(li);
                 });
@@ -284,36 +317,33 @@
             dom.placeholder.classList.add('hidden');
             if (!html5QrCode) html5QrCode = new Html5Qrcode("reader");
             
-            if (html5QrCode.isScanning) {
-                dom.shutter.classList.remove('hidden');
-                return;
-            }
+            if (html5QrCode.isScanning) return;
 
             try {
-                // Ajuste de área rectangular (320x150) para evitar escanear códigos adyacentes
+                // Rectangular qrbox (320x150)
                 await html5QrCode.start(
                     { facingMode: "environment" },
                     { fps: 20, qrbox: { width: 320, height: 150 }, aspectRatio: 1.7777777778 },
                     (text) => {
                         if (isListening) {
                             isListening = false;
+                            // Efectos visuales de detección exitosa
+                            dom.reticle.classList.add('detecting');
                             dom.flash.classList.add('flash-active');
                             setTimeout(() => dom.flash.classList.remove('flash-active'), 400);
-                            if (navigator.vibrate) navigator.vibrate(80);
+                            if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
                             searchBox(text);
                         }
                     },
                     () => {}
                 );
-                dom.shutter.classList.remove('hidden');
             } catch (err) {
                 dom.placeholder.classList.remove('hidden');
-                showMessage("Acceso a cámara requerido", "error");
+                showMessage("Permiso de cámara denegado", "error");
             }
         };
 
         const stopScanner = async () => {
-            dom.shutter.classList.add('hidden');
             if (html5QrCode && html5QrCode.isScanning) {
                 try { await html5QrCode.stop(); } catch (e) {}
             }
@@ -322,8 +352,8 @@
 
         const switchMode = (mode) => {
             currentMode = mode;
-            document.getElementById('tab-scanner').className = `flex-1 py-3.5 font-black text-[10px] uppercase tracking-widest rounded-xl transition-all ${mode === 'scanner' ? 'bg-indigo-600 text-white shadow-lg' : 'text-gray-500'}`;
-            document.getElementById('tab-manual').className = `flex-1 py-3.5 font-black text-[10px] uppercase tracking-widest rounded-xl transition-all ${mode === 'manual' ? 'bg-indigo-600 text-white shadow-lg' : 'text-gray-500'}`;
+            document.getElementById('tab-scanner').className = `flex-1 py-3 font-black text-[9px] uppercase tracking-widest rounded-xl transition-all ${mode === 'scanner' ? 'bg-indigo-600 text-white shadow-lg' : 'text-gray-500'}`;
+            document.getElementById('tab-manual').className = `flex-1 py-3 font-black text-[9px] uppercase tracking-widest rounded-xl transition-all ${mode === 'manual' ? 'bg-indigo-600 text-white shadow-lg' : 'text-gray-500'}`;
             
             dom.confirmation.classList.add('hidden');
             dom.msg.innerHTML = '';
@@ -341,9 +371,17 @@
 
         // --- HANDLERS ---
         document.getElementById('btn-capture').onclick = () => {
+            if (isListening) return;
             isListening = true;
             showMessage("Capturando...", "info");
-            setTimeout(() => { if(isListening) { isListening = false; showMessage("No se detectó nada", "warning"); }}, 3000);
+            // Timer de seguridad por si no hay nada que leer
+            setTimeout(() => { 
+                if(isListening) { 
+                    isListening = false; 
+                    showMessage("No se detectó código", "warning"); 
+                    dom.reticle.classList.remove('detecting');
+                } 
+            }, 3000);
         };
 
         document.getElementById('btn-start-camera').onclick = startScanner;
@@ -363,7 +401,7 @@
                 dom.main.classList.remove('hidden');
                 switchMode('scanner');
             } catch (err) {
-                document.getElementById('config-error').innerText = "Conexión fallida. Revisa los IDs.";
+                document.getElementById('config-error').innerText = "Credenciales inválidas";
                 document.getElementById('config-error').classList.remove('hidden');
             }
         };
@@ -375,11 +413,11 @@
             btn.disabled = true; btn.innerText = 'GUARDANDO...';
             try {
                 await fetchAirtable(`/${foundRecord.id}`, { method: 'PATCH', body: JSON.stringify({ fields: { Status_arribo: true } }) });
-                showMessage('¡Caja registrada con éxito!', 'success');
+                showMessage('¡Ingreso exitoso!', 'success');
                 hideConfirmation();
             } catch (e) {
                 showMessage(e.message, 'error');
-                btn.disabled = false; btn.innerText = 'CONFIRMAR';
+                btn.disabled = false; btn.innerText = 'CONFIRMAR INGRESO';
             }
         };
 
