@@ -152,7 +152,7 @@ export const MainScreen: React.FC<MainScreenProps> = ({ credentials, onClearConf
                     Escanear Cámara
                 </button>
                 <button onClick={() => { resetState(); setMode('manual'); }} className={`flex-1 py-3.5 font-black text-[10px] uppercase tracking-widest rounded-xl transition-all ${mode === 'manual' ? 'bg-indigo-600 text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}>
-                    Lista de Cajas
+                    Búsqueda Manual
                 </button>
             </div>
             
@@ -190,11 +190,11 @@ export const MainScreen: React.FC<MainScreenProps> = ({ credentials, onClearConf
                                         suggestions.map(record => (
                                             <div 
                                                 key={record.id} 
-                                                onClick={() => handleSearch(formatBoxId(record.fields.ID_Caja))}
+                                                onClick={() => { setMessage(null); setFoundRecord(record); setScannerActive(false); }}
                                                 className="p-5 hover:bg-indigo-600/10 cursor-pointer flex justify-between items-center transition-all active:bg-indigo-600 group"
                                             >
                                                 <span className="font-bold tracking-tight text-white">{formatBoxId(record.fields.ID_Caja)}</span>
-                                                <span className="text-indigo-500 font-black text-[9px] uppercase tracking-widest">Ver →</span>
+                                                <span className="text-indigo-500 font-black text-[9px] uppercase tracking-widest">Seleccionar →</span>
                                             </div>
                                         ))
                                     ) : (
@@ -209,11 +209,13 @@ export const MainScreen: React.FC<MainScreenProps> = ({ credentials, onClearConf
 
                     {foundRecord && (
                         <div className="flex-grow flex flex-col justify-center animate-fade-in">
-                            <div className="bg-indigo-600/10 border border-indigo-500/30 p-10 rounded-[2.5rem] text-center">
+                            <div className="bg-indigo-600/10 border border-indigo-500/30 p-8 rounded-[2.5rem] text-center">
                                 <p className="text-indigo-400 text-[9px] font-black uppercase tracking-[0.5em] mb-4">Caja Identificada</p>
-                                <h2 className="text-2xl sm:text-3xl font-black text-white mb-10 tracking-tighter break-all">
-                                    {formatBoxId(foundRecord.fields.ID_Caja)}
-                                </h2>
+                                <div className="px-4 mb-10">
+                                    <h2 className="text-lg sm:text-xl font-black text-white tracking-tight break-all leading-tight">
+                                        {formatBoxId(foundRecord.fields.ID_Caja)}
+                                    </h2>
+                                </div>
                                 <div className="flex flex-col gap-4">
                                     <button 
                                         onClick={handleConfirm} 

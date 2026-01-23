@@ -32,8 +32,8 @@
 <script type="importmap">
 {
   "imports": {
-    "react": "https://esm.sh/react@^19.2.3",
-    "react/": "https://esm.sh/react@^19.2.3/"
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "react": "https://esm.sh/react@^19.2.3"
   }
 }
 </script>
@@ -85,7 +85,7 @@
             <!-- Navegación por Tabs -->
             <div class="flex bg-gray-900/90 p-1.5 m-3 rounded-[1.5rem] border border-gray-700/50">
                 <button id="tab-scanner" class="flex-1 py-3.5 font-black text-[10px] uppercase tracking-widest rounded-xl transition-all bg-indigo-600 text-white shadow-lg">Escanear Cámara</button>
-                <button id="tab-manual" class="flex-1 py-3.5 font-black text-[10px] uppercase tracking-widest rounded-xl transition-all text-gray-500 hover:text-white">Lista de Cajas</button>
+                <button id="tab-manual" class="flex-1 py-3.5 font-black text-[10px] uppercase tracking-widest rounded-xl transition-all text-gray-500 hover:text-white">Búsqueda Manual</button>
             </div>
 
             <div class="px-6 pb-6 flex-grow flex flex-col">
@@ -137,9 +137,11 @@
 
                 <!-- Modal de Confirmación -->
                 <div id="confirmation-zone" class="hidden mt-4 animate-fade-in">
-                    <div class="bg-indigo-600/10 border border-indigo-500/30 p-10 rounded-[2.5rem] text-center">
+                    <div class="bg-indigo-600/10 border border-indigo-500/30 p-8 rounded-[2.5rem] text-center">
                         <p class="text-indigo-400 text-[9px] font-black uppercase tracking-[0.5em] mb-4">Caja Identificada</p>
-                        <h2 id="found-box-id" class="text-5xl font-black text-white mb-10 tracking-tighter">ID_BOX</h2>
+                        <div class="px-4 mb-10">
+                            <h2 id="found-box-id" class="text-lg sm:text-xl font-black text-white tracking-tight break-all leading-tight">ID_BOX</h2>
+                        </div>
                         <div class="flex flex-col gap-4">
                             <button id="btn-confirm-arribo" class="w-full py-5 bg-green-600 hover:bg-green-500 text-white font-black text-xl rounded-2xl transition-all shadow-xl uppercase tracking-widest active:scale-95">
                                 CONFIRMAR
@@ -250,8 +252,8 @@
                     const li = document.createElement('li');
                     li.className = 'p-5 hover:bg-indigo-600/10 cursor-pointer flex justify-between items-center transition-all active:bg-indigo-600';
                     const boxId = safeString(rec.fields.ID_Caja);
-                    li.innerHTML = `<span class="font-bold tracking-tight text-white">${boxId}</span><span class="text-indigo-500 font-black text-[9px] uppercase tracking-widest">Ver →</span>`;
-                    li.onclick = () => showConfirmation(rec);
+                    li.innerHTML = `<span class="font-bold tracking-tight text-white">${boxId}</span><span class="text-indigo-500 font-black text-[9px] uppercase tracking-widest">Seleccionar →</span>`;
+                    li.onclick = () => showConfirmation(rec); // Aquí mostramos el segundo tap (CONFIRMAR)
                     dom.list.appendChild(li);
                 });
             } catch (e) { showMessage(e.message, 'error'); }
