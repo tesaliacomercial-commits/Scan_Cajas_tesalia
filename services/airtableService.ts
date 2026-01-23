@@ -33,7 +33,6 @@ export const validateCredentials = async ({ pat, baseId, tableId }: AirtableCred
       Authorization: `Bearer ${pat}`,
     },
   });
-  // If handleResponse doesn't throw, the credentials are valid
   await handleResponse(response);
   return true;
 };
@@ -42,7 +41,9 @@ export const findRecordByBoxId = async (
   { pat, baseId, tableId }: AirtableCredentials,
   boxId: string
 ): Promise<AirtableRecord | null> => {
-  const filterFormula = encodeURIComponent(`{ID_Caja} = '${boxId}'`);
+  const sanitizedBoxId = boxId.replace(/'/g, "\\'");
+  // Use a more robust check for non-arrived status
+  const filterFormula = encodeURIComponent(`AND({ID_Caja} = '${sanitizedBoxId}')`);
   const url = `${API_URL}/${baseId}/${tableId}?filterByFormula=${filterFormula}&maxRecords=1`;
 
   const response = await fetch(url, {
@@ -52,7 +53,6 @@ export const findRecordByBoxId = async (
   });
 
   const data = await handleResponse<AirtableFindResponse>(response);
-
   return data.records.length > 0 ? data.records[0] : null;
 };
 
@@ -82,9 +82,21 @@ export const searchRecordsByBoxIdPrefix = async (
   { pat, baseId, tableId }: AirtableCredentials,
   prefix: string
 ): Promise<AirtableRecord[]> => {
-  // Use SEARCH for case-insensitive partial matching.
-  const filterFormula = encodeURIComponent(`SEARCH("${prefix}", {ID_Caja})`);
-  const url = `${API_URL}/${baseId}/${tableId}?filterByFormula=${filterFormula}&maxRecords=5&fields%5B%5D=ID_Caja&fields%5B%5D=Status_arribo`;
+  let formula: string;
+  const trimmedPrefix = prefix.trim();
+
+  // Robust check: Status_arribo != 1 covers both false and blank/null values in Airtable
+  if (trimmedPrefix === '') {
+    formula = '{Status_arribo} != 1';
+  } else {
+    const sanitizedPrefix = trimmedPrefix.replace(/["'\\]/g, '\\$&');
+    // Case-insensitive search by forcing lowercase on both ends
+    formula = `AND(SEARCH(LOWER("${sanitizedPrefix}"), LOWER({ID_Caja} & "")), {Status_arribo} != 1)`;
+  }
+  
+  const filterFormula = encodeURIComponent(formula);
+  // Sort by ID_Caja to make the list readable
+  const url = `${API_URL}/${baseId}/${tableId}?filterByFormula=${filterFormula}&maxRecords=100&fields%5B%5D=ID_Caja&sort%5B0%5D%5Bfield%5D=ID_Caja&sort%5B0%5D%5Bdirection%5D=asc`;
 
   const response = await fetch(url, {
     headers: {
@@ -93,5 +105,8 @@ export const searchRecordsByBoxIdPrefix = async (
   });
 
   const data = await handleResponse<AirtableFindResponse>(response);
-  return data.records;
+  const records = (data && Array.isArray(data.records)) ? data.records : [];
+  
+  // Filter out any records that might have a null ID_Caja and ensure we return a string
+  return records.filter(record => record && record.fields && record.fields.ID_Caja !== undefined && record.fields.ID_Caja !== null);
 };
