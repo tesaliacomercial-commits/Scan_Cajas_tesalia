@@ -45,7 +45,7 @@
             border: 4px solid rgba(255,255,255,0.3);
             transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        /* Color Verde cuando detecta */
+        /* Color Verde cuando detecta código en el área */
         .detecting .corner {
             border-color: #22c55e !important;
             box-shadow: 0 0 20px rgba(34, 197, 94, 0.6);
@@ -61,44 +61,36 @@
             box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 0 0 4px rgba(255, 255, 255, 0.1);
         }
         
-        /* Ocultar elementos innecesarios de la librería */
         #reader__dashboard { display: none !important; }
     </style>
 <script type="importmap">
 {
   "imports": {
-    "react/": "https://esm.sh/react@^19.2.3/",
-    "react": "https://esm.sh/react@^19.2.3"
+    "react": "https://esm.sh/react@^19.2.3",
+    "react/": "https://esm.sh/react@^19.2.3/"
   }
 }
 </script>
 </head>
 <body class="bg-gray-900 text-white min-h-screen font-sans selection:bg-indigo-500 overflow-x-hidden">
 
-    <!-- CONFIGURACIÓN -->
+    <!-- PANTALLA DE CONFIGURACIÓN SIMPLIFICADA -->
     <div id="config-screen" class="hidden flex flex-col items-center justify-center min-h-screen p-6">
         <div class="w-full max-w-md bg-gray-800 rounded-[2.5rem] shadow-2xl p-8 border border-gray-700">
             <h1 class="text-3xl font-black text-center mb-2 tracking-tight">Terminal Bodega</h1>
-            <p class="text-center text-gray-400 mb-8 text-sm">Configura el acceso a Airtable</p>
+            <p class="text-center text-gray-400 mb-8 text-sm">Ingresa el Token para activar la unidad</p>
             
-            <form id="config-form" class="space-y-5">
+            <form id="config-form" class="space-y-6">
                 <div>
-                    <label class="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2 px-1">Token de Acceso (PAT)</label>
-                    <input type="password" id="pat" required class="w-full bg-gray-900 border border-gray-700 text-white rounded-2xl p-4 focus:ring-2 focus:ring-indigo-500 outline-none transition-all" placeholder="pat...">
-                </div>
-                <div>
-                    <label class="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2 px-1">Base ID</label>
-                    <input type="text" id="baseId" required class="w-full bg-gray-900 border border-gray-700 text-white rounded-2xl p-4 focus:ring-2 focus:ring-indigo-500 outline-none transition-all" placeholder="app...">
-                </div>
-                <div>
-                    <label class="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2 px-1">Table ID</label>
-                    <input type="text" id="tableId" required class="w-full bg-gray-900 border border-gray-700 text-white rounded-2xl p-4 focus:ring-2 focus:ring-indigo-500 outline-none transition-all" placeholder="tbl...">
+                    <label class="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2 px-1">Personal Access Token (PAT)</label>
+                    <input type="password" id="pat" required class="w-full bg-gray-900 border border-gray-700 text-white rounded-2xl p-5 focus:ring-2 focus:ring-indigo-500 outline-none transition-all" placeholder="pat...">
+                    <p class="mt-2 text-[9px] text-gray-600 px-1 italic">* Los IDs de Base y Tabla ya están configurados internamente.</p>
                 </div>
                 
                 <div id="config-error" class="hidden p-4 bg-red-900/30 border border-red-700/50 text-red-400 rounded-2xl text-[10px] text-center font-bold"></div>
                 
                 <button type="submit" class="w-full py-5 bg-indigo-600 hover:bg-indigo-500 text-white font-black rounded-2xl transition-all shadow-xl uppercase tracking-widest text-[11px]">
-                    Conectar Terminal
+                    Activar Terminal
                 </button>
             </form>
         </div>
@@ -112,12 +104,11 @@
                 <p class="text-[9px] text-gray-500 font-bold uppercase tracking-[0.2em]">Logística Activa</p>
             </div>
             <button id="btn-clear-config" class="text-[9px] font-black text-gray-500 hover:text-red-400 uppercase tracking-widest border border-gray-800 px-5 py-2 rounded-full bg-black/40">
-                Salir
+                Cerrar Sesión
             </button>
         </header>
 
         <main class="flex-grow flex flex-col bg-gray-800/50 rounded-[2.5rem] border border-gray-700/50 shadow-2xl overflow-hidden backdrop-blur-sm">
-            <!-- Navegación -->
             <div class="flex bg-gray-950/50 p-1.5 m-4 rounded-[1.5rem] border border-gray-700/30">
                 <button id="tab-scanner" class="flex-1 py-3 font-black text-[10px] uppercase tracking-widest rounded-xl transition-all bg-indigo-600 text-white shadow-lg">Cámara</button>
                 <button id="tab-manual" class="flex-1 py-3 font-black text-[10px] uppercase tracking-widest rounded-xl transition-all text-gray-500 hover:text-white">Pendientes</button>
@@ -126,12 +117,10 @@
             <div class="px-5 pb-6 flex-grow flex flex-col relative">
                 <div id="message-container"></div>
 
-                <!-- SCANNER -->
                 <div id="section-scanner" class="flex-grow flex flex-col">
                     <div id="reader-container" class="w-full aspect-[4/3] relative bg-black rounded-[2rem] overflow-hidden border border-gray-700 shadow-2xl">
                         <div id="reader" class="w-full h-full"></div>
                         
-                        <!-- Retícula con feedback visual -->
                         <div id="reticle" class="focus-frame">
                             <div class="corner corner-tl"></div>
                             <div class="corner corner-tr"></div>
@@ -148,7 +137,6 @@
                         </div>
                     </div>
 
-                    <!-- Botón de Cámara (Debajo del visor) -->
                     <div class="mt-8 flex flex-col items-center gap-4">
                         <button id="btn-capture" class="shutter-btn bg-white active:scale-90 text-indigo-600 w-20 h-20 rounded-full flex items-center justify-center transition-all">
                             <svg class="w-10 h-10" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 5a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V7a2 2 0 00-2-2h-1.586a1 1 0 01-.707-.293l-1.121-1.121A2 2 0 0011.172 3H8.828a2 2 0 00-1.414.586L6.293 4.707A1 1 0 015.586 5H4zm6 9a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"></path></svg>
@@ -157,7 +145,6 @@
                     </div>
                 </div>
 
-                <!-- LISTA MANUAL -->
                 <div id="section-manual" class="hidden flex-grow flex flex-col">
                     <div class="mb-4">
                         <input type="text" id="manual-search-input" class="w-full bg-gray-950/50 border border-gray-700 text-white rounded-2xl p-5 text-sm outline-none focus:ring-2 focus:ring-indigo-500 transition-all placeholder-gray-700" placeholder="Buscar ID de caja...">
@@ -171,7 +158,6 @@
                     </div>
                 </div>
 
-                <!-- CONFIRMACIÓN -->
                 <div id="confirmation-zone" class="hidden absolute inset-x-5 top-0 bottom-6 z-[60] animate-fade-in">
                     <div class="h-full bg-gray-900 border border-indigo-500/30 p-8 rounded-[2.5rem] flex flex-col items-center justify-center text-center shadow-2xl">
                         <div class="w-16 h-16 bg-indigo-600/10 text-indigo-500 rounded-full flex items-center justify-center mb-6">
@@ -192,13 +178,17 @@
             </div>
         </main>
         <footer class="mt-4 text-center text-gray-700 text-[8px] font-bold uppercase tracking-[0.3em]">
-            Conectado a Airtable v2.5
+            Logística Optimizada • v2.6
         </footer>
     </div>
 
     <script>
+        // CONFIGURACIÓN INTERNA INTEGRADA
+        const FIXED_BASE_ID = 'appwPbjGYCk6xoeWd'; 
+        const FIXED_TABLE_ID = 'tblcKlCDPaoYiUDxw'; 
+
         // ESTADO
-        let credentials = { pat: '', baseId: '', tableId: '' };
+        let credentials = { pat: '', baseId: FIXED_BASE_ID, tableId: FIXED_TABLE_ID };
         let currentMode = 'scanner'; 
         let html5QrCode = null;
         let foundRecord = null;
@@ -220,23 +210,25 @@
             placeholder: document.getElementById('scanner-placeholder'),
             flash: document.getElementById('flash-layer'),
             reticle: document.getElementById('reticle'),
-            patInput: document.getElementById('pat'),
-            baseInput: document.getElementById('baseId'),
-            tableInput: document.getElementById('tableId')
+            patInput: document.getElementById('pat')
         };
 
-        // UTILIDADES
+        // FUNCIÓN ROBUSTA PARA EVITAR [object Object]
         const safeString = (val) => {
             if (val === null || val === undefined) return '';
             if (Array.isArray(val)) return safeString(val[0]);
-            if (typeof val === 'object') return val.name || val.text || JSON.stringify(val);
+            if (typeof val === 'object') {
+                // Airtable a veces devuelve objetos en Lookups o fórmulas
+                return val.name || val.text || val.value || JSON.stringify(val);
+            }
             return String(val);
         };
 
         const showMessage = (text, type = 'info') => {
+            const displayMessage = typeof text === 'object' ? (text.message || JSON.stringify(text)) : text;
             const colors = { success: 'bg-green-600', error: 'bg-red-600', warning: 'bg-yellow-500 text-black', info: 'bg-indigo-600' };
-            dom.msg.innerHTML = `<div class="p-4 ${colors[type]} text-white font-black rounded-xl mb-4 text-center animate-fade-in shadow-lg text-[10px] uppercase tracking-widest">${text}</div>`;
-            if (type !== 'info') setTimeout(() => { if (dom.msg.innerText.includes(text)) dom.msg.innerHTML = ''; }, 3000);
+            dom.msg.innerHTML = `<div class="p-4 ${colors[type]} text-white font-black rounded-xl mb-4 text-center animate-fade-in shadow-lg text-[10px] uppercase tracking-widest">${displayMessage}</div>`;
+            if (type !== 'info') setTimeout(() => { if (dom.msg.innerText.includes(displayMessage)) dom.msg.innerHTML = ''; }, 3000);
         };
 
         const fetchAirtable = async (endpoint, options = {}) => {
@@ -245,7 +237,10 @@
                 ...options,
                 headers: { 'Authorization': `Bearer ${credentials.pat}`, 'Content-Type': 'application/json', ...options.headers }
             });
-            if (!res.ok) throw new Error('Error en Airtable');
+            if (!res.ok) {
+                const errData = await res.json().catch(() => ({}));
+                throw new Error(errData.error?.message || `Error ${res.status}`);
+            }
             return res.json();
         };
 
@@ -253,7 +248,7 @@
             if (!id || foundRecord) return;
             const cleanId = safeString(id);
             try {
-                showMessage(`Procesando ${cleanId}...`, 'info');
+                showMessage(`Buscando ${cleanId}...`, 'info');
                 const formula = `{ID_Caja} = '${cleanId.trim().replace(/'/g, "\\'")}'`;
                 const data = await fetchAirtable(`?filterByFormula=${encodeURIComponent(formula)}&maxRecords=1`);
                 
@@ -267,7 +262,7 @@
                 } else {
                     showMessage("ID no encontrado", "error");
                 }
-            } catch (e) { showMessage(e.message, "error"); }
+            } catch (e) { showMessage(e.message || e, "error"); }
             finally { isListening = false; }
         };
 
@@ -294,7 +289,7 @@
                     li.onclick = () => showConfirmation(rec);
                     dom.list.appendChild(li);
                 });
-            } catch (e) { showMessage(e.message, 'error'); }
+            } catch (e) { showMessage(e.message || e, 'error'); }
         };
 
         const showConfirmation = (record) => {
@@ -312,7 +307,6 @@
             else refreshList(dom.searchInput.value);
         };
 
-        // MOTOR CÁMARA
         const startScanner = async () => {
             dom.placeholder.classList.add('hidden');
             if (!html5QrCode) html5QrCode = new Html5Qrcode("reader");
@@ -323,10 +317,9 @@
                     { facingMode: "environment" },
                     { fps: 24, qrbox: { width: 320, height: 120 }, aspectRatio: 1.333333 },
                     (text) => {
-                        // FEEDBACK EN TIEMPO REAL: Se pone verde al detectar
                         dom.reticle.classList.add('detecting');
                         clearTimeout(detectionTimer);
-                        detectionTimer = setTimeout(() => dom.reticle.classList.remove('detecting'), 600);
+                        detectionTimer = setTimeout(() => dom.reticle.classList.remove('detecting'), 700);
 
                         if (isListening) {
                             isListening = false;
@@ -340,7 +333,7 @@
                 );
             } catch (err) {
                 dom.placeholder.classList.remove('hidden');
-                showMessage("Permiso de cámara denegado", "error");
+                showMessage("Cámara no disponible", "error");
             }
         };
 
@@ -374,13 +367,8 @@
         document.getElementById('btn-capture').onclick = () => {
             if (isListening) return;
             isListening = true;
-            showMessage("Capturando...", "info");
-            setTimeout(() => { 
-                if(isListening) { 
-                    isListening = false; 
-                    showMessage("Vuelve a intentarlo", "warning"); 
-                } 
-            }, 3500);
+            showMessage("Escaneando...", "info");
+            setTimeout(() => { if(isListening) { isListening = false; showMessage("Centra el código", "warning"); } }, 4000);
         };
 
         document.getElementById('btn-start-camera').onclick = startScanner;
@@ -390,32 +378,40 @@
 
         document.getElementById('config-form').onsubmit = async (e) => {
             e.preventDefault();
-            credentials = { pat: dom.patInput.value, baseId: dom.baseInput.value, tableId: dom.tableId.value };
+            const btn = e.target.querySelector('button');
+            btn.innerText = 'VERIFICANDO...';
+            btn.disabled = true;
+            credentials.pat = dom.patInput.value;
             try {
                 await fetchAirtable('?maxRecords=1');
-                localStorage.setItem('ab_pat', credentials.pat);
-                localStorage.setItem('ab_base', credentials.baseId);
-                localStorage.setItem('ab_table', credentials.tableId);
+                localStorage.setItem('ab_pat_v2', credentials.pat);
                 dom.config.classList.add('hidden');
                 dom.main.classList.remove('hidden');
                 switchMode('scanner');
             } catch (err) {
-                document.getElementById('config-error').innerText = "Credenciales incorrectas";
+                document.getElementById('config-error').innerText = err.message || "Token no válido";
                 document.getElementById('config-error').classList.remove('hidden');
+                btn.innerText = 'Activar Terminal';
+                btn.disabled = false;
             }
         };
 
-        document.getElementById('btn-clear-config').onclick = () => { if(confirm('¿Desvincular terminal?')){ localStorage.clear(); location.reload(); } };
+        document.getElementById('btn-clear-config').onclick = () => { 
+            if(confirm('¿Cerrar sesión en esta unidad?')){ 
+                localStorage.clear(); 
+                location.reload(); 
+            } 
+        };
 
         document.getElementById('btn-confirm-arribo').onclick = async () => {
             const btn = document.getElementById('btn-confirm-arribo');
             btn.disabled = true; btn.innerText = 'GUARDANDO...';
             try {
                 await fetchAirtable(`/${foundRecord.id}`, { method: 'PATCH', body: JSON.stringify({ fields: { Status_arribo: true } }) });
-                showMessage('Caja registrada', 'success');
+                showMessage('Arribo confirmado', 'success');
                 hideConfirmation();
             } catch (e) {
-                showMessage(e.message, 'error');
+                showMessage(e.message || e, 'error');
                 btn.disabled = false; btn.innerText = 'Confirmar Ingreso';
             }
         };
@@ -426,10 +422,9 @@
         };
 
         window.onload = () => {
-            const p = localStorage.getItem('ab_pat'), b = localStorage.getItem('ab_base'), t = localStorage.getItem('ab_table');
-            if (p && b && t) {
-                credentials = { pat: p, baseId: b, tableId: t };
-                dom.patInput.value = p; dom.baseInput.value = b; dom.tableInput.value = t;
+            const p = localStorage.getItem('ab_pat_v2');
+            if (p) {
+                credentials.pat = p;
                 dom.main.classList.remove('hidden');
                 switchMode('scanner');
             } else {
