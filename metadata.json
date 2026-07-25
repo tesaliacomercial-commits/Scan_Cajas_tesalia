@@ -3,5 +3,6 @@
   "description": "A mobile tool for warehouse reception connected to Airtable. Scan barcodes or enter IDs manually to check in boxes by updating their status in an Airtable base.",
   "requestFramePermissions": [
     "camera"
-  ]
+  ],
+  "majorCapabilities": []
 }
